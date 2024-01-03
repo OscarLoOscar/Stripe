@@ -6,4 +6,14 @@ import com.stripe.model.Charge;
 
 public interface StripeServiceImpl {
   Charge createPaymentSession(Long userId,ChargeRequest chargeRequest)  throws StripeException ;
+    Response charge(StripePayRequestVO stripePayRequestVO);
+
+    Response getCardList(StripePayRequestVO stripePayRequestVO);
+
+    Response addCard(StripePayRequestVO stripePayRequestVO);
+
+
+
 }
+
+
