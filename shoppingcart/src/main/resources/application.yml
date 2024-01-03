@@ -1,0 +1,27 @@
+server:
+  port: 8099
+
+# Firebase Config - JWT Issuer URI
+spring.security.oauth2.resourceserver.jwt.issuer-uri: https://securetoken.google.com/oscar-venturenix-project
+
+#MySQL Config
+spring.datasource:
+  driver-class-name: com.mysql.cj.jdbc.Driver
+  url: jdbc:mysql://localhost:3306/shopping
+  username: oscarlo
+  password: oscarVenturenixLab2023.
+spring.jpa:
+  show-sql: true
+  hibernate.ddl-auto:
+    update
+    # create-drop
+spring.sql.init:
+  mode: always # always
+  platform: mysql
+spring.profiles.active: enableScheduling
+# spring.data.mongodb:
+#   host: localhost
+#   port: 27017
+#   database: Cart_ItemMGD
+
+stripe.apikey: sk_test_51OUPmzDFIiyCJdlYIRxHYxAXhG9NNbU1uDliUl9tS2gtmFMsw7Qu9t33SuRVGXbuw2itiiit3SRasbVfpLfzXwu600yZ7NaYfz
