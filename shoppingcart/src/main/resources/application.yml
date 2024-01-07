@@ -24,4 +24,7 @@ spring.profiles.active: enableScheduling
 #   port: 27017
 #   database: Cart_ItemMGD
 
-stripe.apikey: sk_test_51OUPmzDFIiyCJdlYIRxHYxAXhG9NNbU1uDliUl9tS2gtmFMsw7Qu9t33SuRVGXbuw2itiiit3SRasbVfpLfzXwu600yZ7NaYfz
+stripe:
+  api:
+    publicKey: sk_test_51OUPmzDFIiyCJdlYIRxHYxAXhG9NNbU1uDliUl9tS2gtmFMsw7Qu9t33SuRVGXbuw2itiiit3SRasbVfpLfzXwu600yZ7NaYfz
+    secretKey: sk_test_51OUPmzDFIiyCJdlYIRxHYxAXhG9NNbU1uDliUl9tS2gtmFMsw7Qu9t33SuRVGXbuw2itiiit3SRasbVfpLfzXwu600yZ7NaYfz
