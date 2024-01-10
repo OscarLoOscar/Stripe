@@ -26,5 +26,7 @@ spring.profiles.active: enableScheduling
 
 stripe:
   api:
-    publicKey: sk_test_51OUPmzDFIiyCJdlYIRxHYxAXhG9NNbU1uDliUl9tS2gtmFMsw7Qu9t33SuRVGXbuw2itiiit3SRasbVfpLfzXwu600yZ7NaYfz
+    publicKey: pk_test_51OUPmzDFIiyCJdlYjDWKaK4ZFKRDqL4HUzfshmgAMgYeTHJKLcSzfNePDDzOPedwbaz3mVszUTONASnl0e69jMlr00jylX6l0e
     secretKey: sk_test_51OUPmzDFIiyCJdlYIRxHYxAXhG9NNbU1uDliUl9tS2gtmFMsw7Qu9t33SuRVGXbuw2itiiit3SRasbVfpLfzXwu600yZ7NaYfz
+    webHookSecretKey: whsec_fdf665018bcb44e3539b66cdc25d44cb92f5f28f7c77ed5136b63490e936e778
+  currency: USD

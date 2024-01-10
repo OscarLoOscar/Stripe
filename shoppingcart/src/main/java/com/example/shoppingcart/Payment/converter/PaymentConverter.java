@@ -1,16 +1,16 @@
-package com.example.shoppingcart.Payment.converter;
+// package com.example.shoppingcart.payment.converter;
 
-import java.util.Set;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
+// import org.mapstruct.Mapper;
+// import org.mapstruct.Mapping;
+// import org.mapstruct.MappingConstants;
 
-@Mapper(uses = ShoppingCartItemDtoConverter.class , componentModel = MappingConstants.ComponentModel.SPRING)
-public interface PaymentConverter {
+// import java.util.Set;
 
-    @Mapping(target = "items", //
-    source = "shoppingCartItems",//
-     qualifiedByName = {"toShoppingCartItemDto"})
-    ProcessedPaymentDetailsDto toDto(final Payment payment,
-                                     final Set<ShoppingCartItem> shoppingCartItems);
+// @Mapper(uses = ShoppingCartItemDtoConverter.class , componentModel = MappingConstants.ComponentModel.SPRING)
+// public interface PaymentConverter {
 
-}
+//     @Mapping(target = "items", source = "shoppingCartItems", qualifiedByName = {"toShoppingCartItemDto"})
+//     ProcessedPaymentDetailsDto toDto(final Payment payment,
+//                                      final Set<ShoppingCartItem> shoppingCartItems);
+
+// }

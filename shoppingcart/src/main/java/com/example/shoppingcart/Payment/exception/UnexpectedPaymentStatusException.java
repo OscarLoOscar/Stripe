@@ -1,5 +1,6 @@
-package com.example.shoppingcart.Payment.exception;
-import com.example.shoppingcart.Payment.enums.PaymentStatus;
+package com.example.shoppingcart.payment.exception;
+
+import com.example.shoppingcart.payment.enums.PaymentStatus;
 import lombok.Getter;
 
 @Getter

@@ -1,4 +1,4 @@
-package com.example.shoppingcart.Payment.converter;
+package com.example.shoppingcart.payment.converter;
 
 import com.stripe.model.Token;
 import com.stripe.param.PaymentMethodCreateParams;

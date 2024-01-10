@@ -1,5 +1,4 @@
-package com.example.shoppingcart.Payment.exception;
-
+package com.example.shoppingcart.payment.exception;
 
 import lombok.Getter;
 
