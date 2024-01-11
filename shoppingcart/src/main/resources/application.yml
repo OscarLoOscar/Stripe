@@ -30,3 +30,6 @@ stripe:
     secretKey: sk_test_51OUPmzDFIiyCJdlYIRxHYxAXhG9NNbU1uDliUl9tS2gtmFMsw7Qu9t33SuRVGXbuw2itiiit3SRasbVfpLfzXwu600yZ7NaYfz
     webHookSecretKey: whsec_fdf665018bcb44e3539b66cdc25d44cb92f5f28f7c77ed5136b63490e936e778
   currency: USD
+
+#   可发布密钥(pk_test)：前端实现stripe接口时用
+# 密钥(sk_test)：后端实现stripe方法时用

@@ -43,8 +43,10 @@ public class Transaction implements Serializable {
   @Column(nullable = false)
   private LocalDateTime datetime;
 
-  @Column(name = "status", nullable = false)
   @Enumerated(EnumType.STRING)
+  @Column(name = "Status",
+      columnDefinition = "ENUM('ORDERED','PREPARE','PROCESSING','SUCCESS','FINISH','NOT_SUCCESS')", //
+      nullable = false)
   private TranStatus status;
 
   @Column(name = "total_price", nullable = false)
