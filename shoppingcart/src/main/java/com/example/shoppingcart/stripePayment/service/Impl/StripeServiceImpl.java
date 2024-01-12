@@ -8,8 +8,6 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import com.example.shoppingcart.infra.enums.Currency;
-import com.example.shoppingcart.stripePayment.config.StripeConfig;
-import com.example.shoppingcart.stripePayment.config.UseSecretKeyCondition;
 import com.example.shoppingcart.stripePayment.dto.StripeChargeDto;
 import com.example.shoppingcart.stripePayment.dto.StripeSubscriptionDto;
 import com.example.shoppingcart.stripePayment.dto.StripeSubscriptionResponse;
@@ -76,7 +74,7 @@ public class StripeServiceImpl implements StripeService {
       chargeParams.put("metadata", metaData);
 
       // Use the appropriate key based on the configuration
-      String apiKey = stripeSecretKey ;
+      String apiKey = stripeSecretKey;
       // Set up RequestOptions with the API key
       RequestOptions requestOptions =
           RequestOptions.builder().setApiKey(apiKey).build();
@@ -98,12 +96,14 @@ public class StripeServiceImpl implements StripeService {
   public StripeSubscriptionResponse createSubscription(
       StripeSubscriptionDto subscriptionDto) {
     PaymentMethod paymentMethod = createPaymentMethod(subscriptionDto);
+
     Customer customer = createCustomer(paymentMethod, subscriptionDto);
-    log.info("customer: " + customer);
+
     paymentMethod = attachCustomerToPaymentMethod(customer, paymentMethod);
+
     Subscription subscription =
         createSubscription(subscriptionDto, paymentMethod, customer);
-    log.info("subscription" + subscription);
+    log.info("subscription :" + subscription);
     return createResponse(subscriptionDto, paymentMethod, customer,
         subscription);
   }
@@ -144,8 +144,8 @@ public class StripeServiceImpl implements StripeService {
       params.put("card", card);
 
       // Use the appropriate key based on the configuration
-    
-      String apiKey = stripePublicKey ;
+
+      String apiKey = stripePublicKey;
       // Set up RequestOptions with the API key
       RequestOptions requestOptions =
           RequestOptions.builder().setApiKey(apiKey).build();
@@ -165,7 +165,7 @@ public class StripeServiceImpl implements StripeService {
       customerMap.put("email", subscriptionDto.getEmail());
       customerMap.put("payment_method", paymentMethod.getId());
       // Use the appropriate key based on the configuration
-      String apiKey = stripePublicKey ;
+      String apiKey = stripeSecretKey;
       // Set up RequestOptions with the API key
       RequestOptions requestOptions =
           RequestOptions.builder().setApiKey(apiKey).build();
@@ -178,22 +178,29 @@ public class StripeServiceImpl implements StripeService {
 
   private PaymentMethod attachCustomerToPaymentMethod(Customer customer,
       PaymentMethod paymentMethod) {
+    // Use the appropriate key based on the configuration
+    String apiKey = stripeSecretKey;
+    // Set up RequestOptions with the API key
+    RequestOptions requestOptions =
+        RequestOptions.builder().setApiKey(apiKey).build();
+
     try {
-      paymentMethod =
-          com.stripe.model.PaymentMethod.retrieve(paymentMethod.getId());
+
+      paymentMethod = com.stripe.model.PaymentMethod
+          .retrieve(paymentMethod.getId(), requestOptions);
+
       Map<String, Object> params = new HashMap<>();
       params.put("customer", customer.getId());
-      // Use the appropriate key based on the configuration
-      String apiKey = stripeSecretKey ;
-      // Set up RequestOptions with the API key
-      RequestOptions requestOptions =
-          RequestOptions.builder().setApiKey(apiKey).build();
 
       paymentMethod = paymentMethod.attach(params, requestOptions);
       return paymentMethod;
+
+
     } catch (StripeException e) {
+      log.error("StripeService (attachCustomerToPaymentMethod)", e);
       throw new RuntimeException(e.getMessage());
     }
+
   }
 
   private Subscription createSubscription(StripeSubscriptionDto subscriptionDto,
@@ -207,12 +214,10 @@ public class StripeServiceImpl implements StripeService {
 
       Map<String, Object> params = new HashMap<>();
       params.put("customer", customer.getId());
-      params.put("payment_method", paymentMethod.getId());
-      params.put("currency", Currency.HKD.name());
-      params.put("payment_method_types", Arrays.asList("card"));
+      params.put("default_payment_method", paymentMethod.getId());
       params.put("items", items);
       // Use the appropriate key based on the configuration
-      String apiKey = stripeSecretKey ;
+      String apiKey = stripeSecretKey;
       // Set up RequestOptions with the API key
       RequestOptions requestOptions =
           RequestOptions.builder().setApiKey(apiKey).build();
