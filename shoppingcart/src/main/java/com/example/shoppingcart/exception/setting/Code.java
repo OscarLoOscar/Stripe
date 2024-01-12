@@ -2,9 +2,9 @@ package com.example.shoppingcart.exception.setting;
 
 import lombok.Getter;
 
-//SysCode
+// SysCode
 @Getter
-public enum Code { 
+public enum Code {
   OK(20000, "OK"),
   // 40000 - 49999
   NOT_FOUND(40000, "Resource NOT FOUND."), //
@@ -21,6 +21,23 @@ public enum Code {
   SERVER_TIMEOUT(50000, "Server Timeout."), //
   THIRD_PARTY_SERVER_UNAVAILABLE(50001, "Third Party Service Unavailable."), //
   REDIS_SERVER_UNAVAILABLE(50002, "Redis unavailable."),
+  // Stripe
+  STRIPE_TOKEN_ALREADY_USED(60001, "Token already used."), //
+  PAYMENT_METHOD_IS_REQUIRED(60002, "Payment method is required"), //
+  PAYMENT_CONFIRMATION_IS_REQUIRED(60003, "Payment confirmation is required"),
+
+  PAYMENT_CAPTURE_IS_REQUIRED(60004, "Payment capture is required"),
+
+  PAYMENT_ACTION_IS_REQUIRED(60005,
+      "Additional action is required to complete payment"),
+
+  PAYMENT_IS_FAILED(60006, "Payment processing error"),
+
+  PAYMENT_IS_PROCESSING(60007, "Payment in processing"),
+
+  PAYMENT_IS_CANCELED(60008, "Payment is canceled"),
+
+  PAYMENT_IS_SUCCEEDED(60009, "Payment is succeeded"),
   // RuntimeException: 90000 - 99999
   IAE_EXCEPTION(90000, "Illegal Argument Exception."), //
   ENTITY_NOT_FOUND(90001, "Entity Not Found."), //

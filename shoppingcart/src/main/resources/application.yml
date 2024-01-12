@@ -24,6 +24,10 @@ spring.profiles.active: enableScheduling
 #   port: 27017
 #   database: Cart_ItemMGD
 
+use:
+  secret:
+    key: true
+
 stripe:
   api:
   # 用publicKey做testing
@@ -32,5 +36,8 @@ stripe:
     webHookSecretKey: whsec_fdf665018bcb44e3539b66cdc25d44cb92f5f28f7c77ed5136b63490e936e778
   currency: USD
 
-#   可发布密钥(pk_test)：前端实现stripe接口时用
-# 密钥(sk_test)：后端实现stripe方法时用
+# 测试模式下的私钥：在测试模式下，使用此密钥对服务器上的请求进行身份验证。默认情况下，您可以不受任何限制地使用此密钥执行任何 API 请求。
+# 测试模式下的公钥：在您的网页或移动应用程序的客户端代码中用这个密钥进行测试。
+
+# 真实模式下的私钥：在真实模式下，使用此密钥对服务器上的请求进行身份验证。默认情况下，您可以不受任何限制地使用此密钥执行任何 API 请求。
+# 真实模式下的公钥：在准备启动您的应用程序时，在您的网页或移动应用程序的客户端代码中使用这个密钥。
