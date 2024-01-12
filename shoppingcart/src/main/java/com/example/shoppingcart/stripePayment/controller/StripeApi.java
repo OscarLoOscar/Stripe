@@ -9,7 +9,7 @@ import com.example.shoppingcart.stripePayment.dto.StripeTokenDto;
 import com.example.shoppingcart.stripePayment.service.StripeService;
 
 @RestController
-@RequestMapping("/stripe")
+@RequestMapping("/public/stripe")
 public class StripeApi implements StripeApiImpl {
 
   @Autowired

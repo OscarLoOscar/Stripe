@@ -1,5 +1,6 @@
 package com.example.shoppingcart.stripePayment.service.Impl;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,37 +15,42 @@ import com.stripe.model.Token;
 import jakarta.annotation.PostConstruct;
 
 @Service
-public class StripeServiceImpl implements StripeService{
+public class StripeServiceImpl implements StripeService {
+  @Value("${stripe.api.publicKey}")
+  private String StripePublicKey;
+
   @Value("${stripe.api.secretKey}")
-  private String StripeApiKey;
+  private String StripeSecretKey;
 
   @PostConstruct
-  public void init() {
-    Stripe.apiKey = StripeApiKey;
+  public void initPublicKey() {
+    Stripe.apiKey = StripePublicKey;
+  }
+
+  @PostConstruct
+  public void initSecretKey() {
+    Stripe.apiKey = StripeSecretKey;
   }
 
   @Override
   public StripeTokenDto createCardToken(StripeTokenDto model) {
-    StripeTokenDto stripeTokenDto = new StripeTokenDto();
     try {
-      Map<String, Object> cardParam = new HashMap<>();
-      cardParam.put("card_number", model.getCardNumber());
-      cardParam.put("card_exp_month", model.getExpMonth());
-      cardParam.put("card_exp_year", model.getExpYear());
-      cardParam.put("card_cvc", model.getCvc());
-      Map<String, Object> tokenParam = new HashMap<>();
-      tokenParam.put("card", cardParam);
-      Token token = Token.create(tokenParam);
+      Map<String, Object> card = new HashMap<>();
+      card.put("number", model.getCardNumber());
+      card.put("exp_month", Integer.parseInt(model.getExpMonth()));
+      card.put("exp_year", Integer.parseInt(model.getExpYear()));
+      card.put("cvc", model.getCvc());
+      Map<String, Object> params = new HashMap<>();
+      params.put("card", card);
+      Token token = Token.create(params);
       if (token != null && token.getId() != null) {
-        stripeTokenDto.setToken(token.getId());
-        stripeTokenDto.setSuccess(true);
+        model.setSuccess(true);
+        model.setToken(token.getId());
       }
       return model;
-
     } catch (Exception e) {
-      stripeTokenDto.setSuccess(false);
+      throw new RuntimeException(e.getMessage());
     }
-    return stripeTokenDto;
   }
 
   @Override
@@ -52,12 +58,14 @@ public class StripeServiceImpl implements StripeService{
     try {
       chargeRequest.setSuccess(false);
       Map<String, Object> chargeParams = new HashMap<>();
-      chargeParams.put("amount", chargeRequest.getAmount());
-      chargeParams.put("currency",Currency.HKD.name());
-      chargeParams.put("description", "Payment for id " + chargeRequest.getAdditionInfo().getOrDefault("ID_TAG", ""));
+      chargeParams.put("amount",
+          Math.round(Double.parseDouble(chargeRequest.getAmount())* 100));
+      chargeParams.put("currency", Currency.HKD.name());
+      chargeParams.put("description", "Payment for id "
+          + chargeRequest.getAdditionInfo().getOrDefault("ID_TAG", ""));
       chargeParams.put("source", chargeRequest.getStripeToken());
 
-      Map<String,Object> metaData = new HashMap<>();
+      Map<String, Object> metaData = new HashMap<>();
       metaData.put("id", chargeRequest.getChargeId());
       metaData.putAll(chargeRequest.getAdditionInfo());
       chargeParams.put("metadata", metaData);
