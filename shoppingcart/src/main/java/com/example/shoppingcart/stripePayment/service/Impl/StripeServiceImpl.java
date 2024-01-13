@@ -1,7 +1,6 @@
 package com.example.shoppingcart.stripePayment.service.Impl;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +19,9 @@ import com.stripe.model.PaymentMethod;
 import com.stripe.model.Subscription;
 import com.stripe.model.Token;
 import com.stripe.net.RequestOptions;
+import com.stripe.param.SubscriptionCancelParams;
+import com.stripe.param.SubscriptionUpdateParams;
+import com.stripe.param.billingportal.ConfigurationCreateParams.Features.SubscriptionCancel;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -111,8 +113,17 @@ public class StripeServiceImpl implements StripeService {
   @Override
   public Subscription cancelSubscription(String subscriptionId) {
     try {
-      Subscription retrieve = Subscription.retrieve(subscriptionId);
-      return retrieve.cancel();
+      String apiKey = stripeSecretKey;
+      // Set up RequestOptions with the API key
+      RequestOptions requestOptions =
+          RequestOptions.builder().setApiKey(apiKey).build();
+      Subscription resource = Subscription.retrieve(subscriptionId,requestOptions);
+      log.info("resource " + resource);
+      SubscriptionCancelParams params =
+          SubscriptionCancelParams.builder().build();
+          log.info("params " + params);
+
+      return resource.cancel(params, requestOptions);
     } catch (StripeException e) {
       log.error("StripeService (cancel Subscription)" + e);
     }

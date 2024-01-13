@@ -1,4 +1,4 @@
-package com.example.shoppingcart.stripePayment.controller;
+package com.example.shoppingcart.stripePayment.controller.Impl;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -32,6 +32,6 @@ public interface StripeApiImpl {
 
   @DeleteMapping("/subscription/{id}")
   @ResponseStatus(HttpStatus.ACCEPTED)
-  public SubscriptionCancelRecord cancelSubscription(@PathVariable String id);
+  public SubscriptionCancelRecord cancelSubscription(@PathVariable String id, JwtAuthenticationToken jwt);
 
 }
