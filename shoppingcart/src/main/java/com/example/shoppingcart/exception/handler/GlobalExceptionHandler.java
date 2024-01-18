@@ -78,7 +78,15 @@ public class GlobalExceptionHandler {
     if (e instanceof IllegalArgumentException) {
       return Code.IAE_EXCEPTION;
     }
+    if(e instanceof NoSuchElementException) {
+      return Code.NOT_FOUND;
+    }
+    if(e instanceof UserNotExistException) {
+      return Code.USER_NOT_FOUND;
+    }
+ 
     // ...
-    return Code.NOT_FOUND;
+    return null;
+//    return Code.NOT_FOUND;
   }
 }

@@ -1,11 +1,15 @@
 package com.example.shoppingcart.services.impl;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.example.shoppingcart.Redis.service.ShopCartService;
+import com.example.shoppingcart.config.RedisHashOperations;
+import com.example.shoppingcart.config.RedisHelper;
 import com.example.shoppingcart.entity.CartItem;
 import com.example.shoppingcart.entity.Product;
 import com.example.shoppingcart.entity.UserEntity;
@@ -18,13 +22,13 @@ import com.example.shoppingcart.model.Mapper;
 import com.example.shoppingcart.model.ProductData;
 import com.example.shoppingcart.repository.CartItemRepository;
 import com.example.shoppingcart.services.CartItemService;
+import com.example.shoppingcart.services.ProductService;
+import com.example.shoppingcart.services.TransactionProductService;
 import com.example.shoppingcart.services.UserService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import com.example.shoppingcart.services.ProductService;
-import com.example.shoppingcart.services.TransactionProductService;
 
 @Slf4j
 @Service
@@ -44,6 +48,12 @@ public class CartItemServiceImpl implements CartItemService {
 
   @Autowired
   TransactionProductService transactionProductService;
+
+  @Autowired
+  ShopCartService shopCartService;
+
+  @Autowired
+  RedisHashOperations redisHashOperations;
 
   @Override
   @Transactional
@@ -104,17 +114,7 @@ public class CartItemServiceImpl implements CartItemService {
 
   @Override
   public Optional<List<CartItemData>> findAllByUserUid(Long uid) {
-    // return cartItemRepository.findAllByUserUid(uid)//
-    // .stream()//
-    // .map(cartItem -> {
-    // CartItemData cartItemData = Mapper.map(cartItem);
-    // cartItemData.setStock(cartItem.getProduct().getUnitStock());
-    // return cartItemData;
-    // })//
-    // .collect(Collectors.toList());
     List<CartItem> cartItems = cartItemRepository.findAllByUserUid(uid).get();
-
-    // Check if the list is empty
     if (cartItems.isEmpty()) {
       return Optional.empty();
     } else {
@@ -122,13 +122,6 @@ public class CartItemServiceImpl implements CartItemService {
           .map(Mapper::map)//
           .collect(Collectors.toList()));
     }
-    // List<CartItemData> output = new ArrayList<>();
-    // for (CartItem cartItem : cartItemRepository.findAllByUserUid(uid)) {
-    // CartItemData convent = Mapper.map(cartItem);
-    // convent.setStock(cartItem.getProduct().getUnitStock());
-    // output.add(convent);
-    // }
-    // return output;
   }
 
 
@@ -144,64 +137,12 @@ public class CartItemServiceImpl implements CartItemService {
           .collect(Collectors.toList()));
     }
   }
-  // List<CartItemData> output = new ArrayList<>();
-  // for (CartItem cartItem : cartItemRepository.findAllByUserUid(pid)) {
-  // CartItemData convent = Mapper.map(cartItem);
-  // convent.setStock(cartItem.getProduct().getUnitStock());
-  // output.add(convent);
-  // }
-  // return output;
-  // }
 
   public ProductData getProductById(Long productId)
       throws ProductNotExistException {
     return productService.getProductById(productId);
   }
 
-  // public UserData findUserByName(String name) {
-  // return userService.findUserByUserName(name);
-  // }
-
-  /*
-   * 在使用 merge 時，確保它發生在一個事務中。這通常需要使用 @Transactional 注解。在你的服務方法上添加 @Transactional 注解，這樣 Spring 會在方法執行時啟動一個事務。
-   */
-  // @Override
-  // @Transactional
-  // public boolean updateCartQuantity(long userId, long pid, int quantity) {
-  // UserData userData = userService.getUserById(userId);
-
-  // List<CartItem> cartItems =
-  // cartItemRepository.findAllByUserUid(userId).get();
-
-  // if (!cartItems.isEmpty()) {
-  // CartItem cartItem2 = getEntityByUidAndPid(userId, pid);
-  // cartItem2.setQuantity(
-  // cartItem2.getQuantity().add(BigDecimal.valueOf(quantity)));
-  // cartItem2 = entityManager.merge(cartItem2);
-  // cartItemRepository.save(cartItem2);
-  // } else {
-  // ProductData productEntity = productService.getProductById(pid);
-  // CartItem cartItementity = CartItem.builder()//
-  // .product(Mapper.map(productEntity))//
-  // .user(Mapper.map(userData))//
-  // .quantity(BigDecimal.valueOf(quantity))//
-  // .build();
-  // cartItementity = entityManager.merge(cartItementity);
-  // cartItemRepository.save(cartItementity);
-  // // bug
-  // // Update the cartItems list with the newly created entity
-  // cartItems.add(cartItementity);
-  // }
-  // return true;
-  // }
-
-
-  // old
-  // public CartItem getEntityByUidAndPid(Long uid, Long pid) {
-  // return cartItemRepository.findByUser_UidAndProduct_Pid(uid, pid)//
-  // .orElseThrow(() -> new RuntimeException(
-  // "CartItem not found for uid: " + uid + " and pid: " + pid));
-  // }
   public Optional<CartItem> getEntityByUidAndPid(Long uid, Long pid) {
     return cartItemRepository.findByUser_UidAndProduct_Pid(uid, pid);
   }
@@ -209,11 +150,6 @@ public class CartItemServiceImpl implements CartItemService {
   public boolean isEnoughStock(Long pid, Integer quantity) {
     return productService.isEnoughStock(pid, quantity);
   }
-
-  // @Override
-  // public void addCartItem(CartItem cartItem) {
-  // cartItemRepository.save(cartItem);
-  // }
 
   @Override
   public CartItemData getCartItemDetails(long uid, long pid) {
@@ -228,7 +164,7 @@ public class CartItemServiceImpl implements CartItemService {
 
   @Override
   @Transactional
-  public void addCartItem(long userId, long productId, int quantity)
+  public void addCartItem(long userId, long productId, Integer quantity)
       throws UserNotExistException, ProductNotExistException {
     // Retrieve UserEntity and Product
     UserEntity user = userService.getUserById(userId);
@@ -237,13 +173,24 @@ public class CartItemServiceImpl implements CartItemService {
     if (user == null || product == null) {
       throw new UserNotExistException(Code.USER_NOT_FOUND);
     }
+    // store in Redis :
+    boolean storedInRedis = redisHashOperations.put(String.valueOf(userId),
+        String.valueOf(productId), quantity);
+
+    if (storedInRedis) {
+      log.info("product stored in Redis: " + "userID : " + userId
+          + " productId : " + productId + " quantity " + quantity);
+    } else {
+      log.error("Failed to store product in Redis: " + "userID : " + userId
+          + " productId : " + productId);
+    }
 
     // Check if there is already a cart item for the user and product
     cartItemRepository.findByUser_UidAndProduct_Pid(userId, productId)
         .ifPresent(existingCartItem -> {
           // If the cart item already exists, update the quantity
           existingCartItem.setQuantity(
-          existingCartItem.getQuantity().add(BigDecimal.valueOf(quantity)));
+              existingCartItem.getQuantity().add(BigDecimal.valueOf(quantity)));
           cartItemRepository.save(existingCartItem);
         });
 

@@ -1,5 +1,12 @@
 package com.example.shoppingcart.exception.setting;
 
+import java.util.Objects;
+import org.springframework.validation.BindingResult;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.Data;
+
+@Data
+@JsonInclude(JsonInclude.Include.NON_NULL) // null 既野唔包係Json
 public class ApiResp<T> {
   // attribute name by default same as JSON field name after serialziation
   private int code;
@@ -54,6 +61,19 @@ public class ApiResp<T> {
     public ApiResponseBuilder<T> error() {
       this.code = Code.NOT_FOUND.getCode();
       this.message = Code.NOT_FOUND.getDesc();
+      return this;
+    }
+
+    public ApiResponseBuilder<T> error(Code code) {
+      this.code = code.getCode();
+      return this;
+    }
+
+    public ApiResponseBuilder<T> error(Code code, BindingResult bindingResult) {
+      this.code = code.getCode();
+      this.message =
+          Objects.requireNonNull(bindingResult.getFieldError()).getField() + " "
+              + bindingResult.getFieldError().getCode();
       return this;
     }
 

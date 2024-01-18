@@ -41,3 +41,25 @@ stripe:
 
 # 真实模式下的私钥：在真实模式下，使用此密钥对服务器上的请求进行身份验证。默认情况下，您可以不受任何限制地使用此密钥执行任何 API 请求。
 # 真实模式下的公钥：在准备启动您的应用程序时，在您的网页或移动应用程序的客户端代码中使用这个密钥。
+redis-key:
+  company-profile2: "FSSE:Ecommerce"
+
+spring.data.redis:
+    host: localhost
+    password: 6379
+    # Redis默认情况下有16个分片，这里配置具体使用的分片，默认是0
+    lettuce:
+      pool:
+        # 当池耗尽时，在引发异常之前连接分配可以阻塞的最长时间（使用负值表示没有限制） 默认 -1
+        max-wait: -1ms
+        # 连接池最大连接数（使用负值表示没有限制） 默认 8
+        max-active: 8
+        # 连接池中的最大空闲连接 默认 8
+        max-idle: 8
+        # 连接池中的最小空闲连接 默认 0
+        min-idle: 0
+    # 连接超时时间
+    timeout: 10000ms
+    # 一般来说是不用配置的，Spring Cache 会根据依赖的包自行装配
+    cache:
+      type: redis

@@ -19,7 +19,7 @@ public interface CartItemService {
 
         // void addCartItem(CartItem cartItem);
 
-        void addCartItem(long userId, long pid, int quantity)
+        void addCartItem(long userId, long pid, Integer quantity)
                         throws UserNotExistException, ProductNotExistException;
 
         boolean updateCartQuantity(long userId, long pid, int quantity)

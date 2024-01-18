@@ -9,9 +9,11 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.oauth2.jwt.JwtDecoders;
 import org.springframework.security.web.SecurityFilterChain;
 import jakarta.servlet.DispatcherType;
+import org.aspectj.lang.annotation.Aspect;
 import org.springframework.beans.factory.annotation.Value;
 
 @EnableWebSecurity
+@Aspect
 @Configuration
 public class SecurityConfig {
   @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
