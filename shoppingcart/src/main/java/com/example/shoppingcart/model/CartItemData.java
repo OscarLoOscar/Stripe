@@ -21,7 +21,7 @@ import lombok.ToString;
     "cart_quantity", "stock"})
 public class CartItemData {
 
-  private Long cid;
+  // private Long cid;
 
   private Long pid;
 

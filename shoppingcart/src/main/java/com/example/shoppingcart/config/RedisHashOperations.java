@@ -15,7 +15,6 @@ import com.example.shoppingcart.model.CartItemData;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-@Configuration
 public class RedisHashOperations {
 
   final String USER_ID = "USER_ID_";

@@ -1,7 +1,6 @@
 package com.example.shoppingcart.config;
 
 import java.util.concurrent.TimeUnit;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
@@ -13,7 +12,6 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 
-@Configuration
 public class RedisHelper {
 
   // key value pair, key must be unqiue, most likely String

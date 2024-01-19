@@ -71,7 +71,7 @@ public class CartItemServiceImpl implements CartItemService {
       throw new UserNotExistException(Code.USER_NOT_FOUND);
 
     }
-    shopCartService.deleteCartItemByCartItemId(userId, cartItemId);
+    shopCartService.deleteAllCartItem(userId);
   }
 
 
@@ -79,34 +79,35 @@ public class CartItemServiceImpl implements CartItemService {
   @Transactional
   public boolean updateCartQuantity(long userId, long pid, int quantity)
       throws ProductNotExistException, UserNotExistException {
-    UserEntity userData = userService.getUserById(userId);
+    // UserEntity userData = userService.getUserById(userId);
 
-    Optional<CartItem> optionalCartItem = getEntityByUidAndPid(userId, pid);
+    // Optional<CartItem> optionalCartItem = getEntityByUidAndPid(userId, pid);
 
-    if (optionalCartItem.isPresent()) {
-      CartItem cartItem2 = optionalCartItem.get();
-      cartItem2.setQuantity(BigDecimal.valueOf(quantity));
-      log.info("Service quantity : " + quantity);
-      cartItem2 = entityManager.merge(cartItem2);
-      cartItemRepository.save(cartItem2);
-    } else {
-      // ProductData productEntity = productService.getProductById(pid);
-      Product product = productService.getProductEntityById(pid);
-      CartItem cartItementity = CartItem.builder()//
-          .product(product)//
-          .user(userData)//
-          .quantity(BigDecimal.valueOf(quantity))//
-          .build();
-      cartItementity = entityManager.merge(cartItementity);
-      cartItemRepository.save(cartItementity);
-    }
-    return true;
+    // if (optionalCartItem.isPresent()) {
+    // CartItem cartItem2 = optionalCartItem.get();
+    // cartItem2.setQuantity(BigDecimal.valueOf(quantity));
+    // log.info("Service quantity : " + quantity);
+    // cartItem2 = entityManager.merge(cartItem2);
+    // cartItemRepository.save(cartItem2);
+    // } else {
+    // // ProductData productEntity = productService.getProductById(pid);
+    // Product product = productService.getProductEntityById(pid);
+    // CartItem cartItementity = CartItem.builder()//
+    // .product(product)//
+    // .user(userData)//
+    // .quantity(BigDecimal.valueOf(quantity))//
+    // .build();
+    // cartItementity = entityManager.merge(cartItementity);
+    // cartItemRepository.save(cartItementity);
+    // }
+    // return true;
+    return shopCartService.updateCartQuantity(userId, pid, quantity);
   }
 
   @Override
   public void deleteAllCartItem(long userId) {
     // cartItemRepository.deleteAll();
-    shopCartService.deleteAllCartItem(String.valueOf(userId));
+    shopCartService.deleteAllCartItem(userId);
   }
 
   @Override
@@ -145,34 +146,34 @@ public class CartItemServiceImpl implements CartItemService {
     return productService.getProductById(productId);
   }
 
-  public Optional<CartItem> getEntityByUidAndPid(Long uid, Long pid) {
-    // return cartItemRepository.findByUser_UidAndProduct_Pid(uid, pid);
-    Optional<List<CartItemData>> cartItems =
-        shopCartService.findAllByUserUid(uid);
-    if (cartItems.isPresent()) {
-      List<CartItemData> cartItemData = cartItems.get();
-      for (CartItemData cartItem : cartItemData) {
-        if (cartItem.getPid() == pid) {
-          return Optional.ofNullable(Mapper.map(cartItem));
-        }
-      }
-    }
-    return Optional.empty();
-  }
+  // public Optional<CartItem> getEntityByUidAndPid(Long uid, Long pid) {
+  // // return cartItemRepository.findByUser_UidAndProduct_Pid(uid, pid);
+  // Optional<List<CartItemData>> cartItems =
+  // shopCartService.findAllByUserUid(uid);
+  // if (cartItems.isPresent()) {
+  // List<CartItemData> cartItemData = cartItems.get();
+  // for (CartItemData cartItem : cartItemData) {
+  // if (cartItem.getPid() == pid) {
+  // return Optional.ofNullable(Mapper.map(cartItem));
+  // }
+  // }
+  // }
+  // return Optional.empty();
+  // }
 
-  public boolean isEnoughStock(Long pid, Integer quantity) {
-    return productService.isEnoughStock(pid, quantity);
-  }
+  // public boolean isEnoughStock(Long pid, Integer quantity) {
+  // return productService.isEnoughStock(pid, quantity);
+  // }
 
   @Override
   public CartItemData getCartItemDetails(long uid, long pid) {
-    Optional<CartItem> optionalCartItem =
-        cartItemRepository.findByUser_UidAndProduct_Pid(uid, pid);
+    // Optional<CartItem> optionalCartItem =
+    // cartItemRepository.findByUser_UidAndProduct_Pid(uid, pid);
 
-    if (optionalCartItem.isPresent()) {
-      return Mapper.map(optionalCartItem.get());
-    }
-    return shopCartService.getCartItemDetails(uid, pid);
+    // if (optionalCartItem.isPresent()) {
+    // return Mapper.map(optionalCartItem.get());
+    // }
+    return shopCartService.getAll(String.valueOf(uid)).get(0);
   }
 
   @Override
