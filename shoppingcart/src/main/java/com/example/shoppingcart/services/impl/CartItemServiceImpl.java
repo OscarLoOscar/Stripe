@@ -1,6 +1,5 @@
 package com.example.shoppingcart.services.impl;
 
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -8,14 +7,13 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.example.shoppingcart.Redis.service.ShopCartService;
-import com.example.shoppingcart.config.RedisHashOperations;
-import com.example.shoppingcart.config.RedisHelper;
 import com.example.shoppingcart.entity.CartItem;
 import com.example.shoppingcart.entity.Product;
 import com.example.shoppingcart.entity.UserEntity;
 import com.example.shoppingcart.exception.CartItemNotFoundException;
 import com.example.shoppingcart.exception.ProductNotExistException;
 import com.example.shoppingcart.exception.UserNotExistException;
+import com.example.shoppingcart.exception.ValidateException;
 import com.example.shoppingcart.exception.setting.Code;
 import com.example.shoppingcart.model.CartItemData;
 import com.example.shoppingcart.model.Mapper;
@@ -52,9 +50,6 @@ public class CartItemServiceImpl implements CartItemService {
   @Autowired
   ShopCartService shopCartService;
 
-  @Autowired
-  RedisHashOperations redisHashOperations;
-
   @Override
   @Transactional
   public void deleteCartItemByCartItemId(long userId, long cartItemId)
@@ -66,7 +61,6 @@ public class CartItemServiceImpl implements CartItemService {
     if (cartItemOptional.isEmpty()) {
       throw new CartItemNotFoundException(Code.PRODUCT_NOT_EXIST);
     }
-
     CartItem cartItem = cartItemOptional.get();
 
     // Check if the cart item belongs to the specified user
@@ -75,7 +69,9 @@ public class CartItemServiceImpl implements CartItemService {
     } else {
       // Handle the case where the cart item doesn't belong to the user
       throw new UserNotExistException(Code.USER_NOT_FOUND);
+
     }
+    shopCartService.deleteCartItemByCartItemId(userId, cartItemId);
   }
 
 
@@ -108,20 +104,23 @@ public class CartItemServiceImpl implements CartItemService {
   }
 
   @Override
-  public void deleteAllCartItem() {
-    cartItemRepository.deleteAll();
+  public void deleteAllCartItem(long userId) {
+    // cartItemRepository.deleteAll();
+    shopCartService.deleteAllCartItem(String.valueOf(userId));
   }
 
   @Override
   public Optional<List<CartItemData>> findAllByUserUid(Long uid) {
-    List<CartItem> cartItems = cartItemRepository.findAllByUserUid(uid).get();
-    if (cartItems.isEmpty()) {
-      return Optional.empty();
-    } else {
-      return Optional.of(cartItems.stream()//
-          .map(Mapper::map)//
-          .collect(Collectors.toList()));
-    }
+    // List<CartItem> cartItems = cartItemRepository.findAllByUserUid(uid).get();
+    // if (cartItems.isEmpty()) {
+    // return Optional.empty();
+    // } else {
+    // return Optional.of(cartItems.stream()//
+    // .map(Mapper::map)//
+    // .collect(Collectors.toList()));
+    // }
+    List<CartItemData> cartItems = shopCartService.getAll(String.valueOf(uid));
+    return Optional.ofNullable(cartItems);
   }
 
 
@@ -136,6 +135,9 @@ public class CartItemServiceImpl implements CartItemService {
           .map(Mapper::map)//
           .collect(Collectors.toList()));
     }
+    // List<CartItemData> cartItems =
+    // redisHashOperations.getAll(String.valueOf(pid));
+    // return Optional.ofNullable(cartItems);
   }
 
   public ProductData getProductById(Long productId)
@@ -144,7 +146,18 @@ public class CartItemServiceImpl implements CartItemService {
   }
 
   public Optional<CartItem> getEntityByUidAndPid(Long uid, Long pid) {
-    return cartItemRepository.findByUser_UidAndProduct_Pid(uid, pid);
+    // return cartItemRepository.findByUser_UidAndProduct_Pid(uid, pid);
+    Optional<List<CartItemData>> cartItems =
+        shopCartService.findAllByUserUid(uid);
+    if (cartItems.isPresent()) {
+      List<CartItemData> cartItemData = cartItems.get();
+      for (CartItemData cartItem : cartItemData) {
+        if (cartItem.getPid() == pid) {
+          return Optional.ofNullable(Mapper.map(cartItem));
+        }
+      }
+    }
+    return Optional.empty();
   }
 
   public boolean isEnoughStock(Long pid, Integer quantity) {
@@ -159,7 +172,7 @@ public class CartItemServiceImpl implements CartItemService {
     if (optionalCartItem.isPresent()) {
       return Mapper.map(optionalCartItem.get());
     }
-    return null;
+    return shopCartService.getCartItemDetails(uid, pid);
   }
 
   @Override
@@ -174,8 +187,9 @@ public class CartItemServiceImpl implements CartItemService {
       throw new UserNotExistException(Code.USER_NOT_FOUND);
     }
     // store in Redis :
-    boolean storedInRedis = redisHashOperations.put(String.valueOf(userId),
-        String.valueOf(productId), quantity);
+    // Add item to the cart and handle success/failure
+    boolean storedInRedis =
+        shopCartService.addCartItem(userId, productId, quantity);
 
     if (storedInRedis) {
       log.info("product stored in Redis: " + "userID : " + userId
@@ -183,6 +197,8 @@ public class CartItemServiceImpl implements CartItemService {
     } else {
       log.error("Failed to store product in Redis: " + "userID : " + userId
           + " productId : " + productId);
+      throw new ValidateException(Code.REDIS_ADD_ITEM_TO_CART_FAIL);
+
     }
 
     // Check if there is already a cart item for the user and product
@@ -191,7 +207,7 @@ public class CartItemServiceImpl implements CartItemService {
           // If the cart item already exists, update the quantity
           existingCartItem.setQuantity(
               existingCartItem.getQuantity().add(BigDecimal.valueOf(quantity)));
-          cartItemRepository.save(existingCartItem);
+          // cartItemRepository.save(existingCartItem);
         });
 
     // If the cart item does not exist, create a new one
@@ -199,23 +215,23 @@ public class CartItemServiceImpl implements CartItemService {
         .isPresent()) {
       CartItem newCartItem = CartItem.builder().user(user).product(product)
           .quantity(BigDecimal.valueOf(quantity)).build();
-      cartItemRepository.save(newCartItem);
+      // cartItemRepository.save(newCartItem);
     }
   }
 
 
-  @Override
-  public Optional<List<CartItem>> findCartEntityByUserUid(Long uid) {
-    List<CartItem> cartItems = cartItemRepository.findAllByUserUid(uid).get();
+  // @Override
+  // public Optional<List<CartItem>> findCartEntityByUserUid(Long uid) {
+  // List<CartItem> cartItems = cartItemRepository.findAllByUserUid(uid).get();
 
-    // Check if the list is empty
-    if (cartItems.isEmpty()) {
-      return Optional.empty();
-    } else {
-      return Optional.of(cartItems.stream()//
-          .collect(Collectors.toList()));
-    }
-  }
+  // // Check if the list is empty
+  // if (cartItems.isEmpty()) {
+  // return Optional.empty();
+  // } else {
+  // return Optional.of(cartItems.stream()//
+  // .collect(Collectors.toList()));
+  // }
+  // }
 
   @Override
   public boolean checkStock(Product productEntity, Integer quantity) {

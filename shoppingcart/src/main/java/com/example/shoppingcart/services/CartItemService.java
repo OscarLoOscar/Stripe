@@ -15,7 +15,7 @@ public interface CartItemService {
 
         Optional<List<CartItemData>> getUserCartItemsByProductId(Long pid);
 
-        Optional<List<CartItem>> findCartEntityByUserUid(Long uid);
+     //   Optional<List<CartItem>> findCartEntityByUserUid(Long uid);
 
         // void addCartItem(CartItem cartItem);
 
@@ -30,7 +30,7 @@ public interface CartItemService {
         void deleteCartItemByCartItemId(long userid, long cartItemId)
                         throws UserNotExistException, CartItemNotFoundException;
 
-        void deleteAllCartItem();
+        void deleteAllCartItem(long userId);
 
         public boolean checkStock(Product productEntity, Integer quantity);
 }

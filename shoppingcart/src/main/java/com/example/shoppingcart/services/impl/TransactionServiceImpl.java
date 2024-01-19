@@ -99,7 +99,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
     output.setItems(listOfTPD);
     // Add at 19/12/2023 , clear the shopping cart
-    cartItemService.deleteAllCartItem();
+    cartItemService.deleteAllCartItem(userId);
     return output;
 
   }

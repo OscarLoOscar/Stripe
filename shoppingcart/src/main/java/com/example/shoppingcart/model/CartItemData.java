@@ -1,6 +1,7 @@
 package com.example.shoppingcart.model;
 
 import java.math.BigDecimal;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.AllArgsConstructor;
@@ -16,11 +17,11 @@ import lombok.ToString;
 @Getter
 @Setter
 @Builder
-@JsonPropertyOrder({"pid", "name", "description", "image_url", "price",
+@JsonPropertyOrder({"cid", "pid", "name", "description", "image_url", "price",
     "cart_quantity", "stock"})
 public class CartItemData {
 
-  //private Long cid;
+  private Long cid;
 
   private Long pid;
 

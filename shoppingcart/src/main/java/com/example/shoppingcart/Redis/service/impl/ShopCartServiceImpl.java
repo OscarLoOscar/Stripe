@@ -1,15 +1,16 @@
 package com.example.shoppingcart.Redis.service.impl;
 
-import java.util.Map;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import com.example.shoppingcart.Redis.model.OperateVo;
 import com.example.shoppingcart.Redis.service.ShopCartService;
 import com.example.shoppingcart.config.RedisHashOperations;
-import com.example.shoppingcart.exception.setting.ApiResp;
-import com.example.shoppingcart.exception.setting.Code;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import com.example.shoppingcart.entity.Product;
+import com.example.shoppingcart.exception.CartItemNotFoundException;
+import com.example.shoppingcart.exception.ProductNotExistException;
+import com.example.shoppingcart.exception.UserNotExistException;
+import com.example.shoppingcart.model.CartItemData;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -17,93 +18,82 @@ import lombok.extern.slf4j.Slf4j;
 public class ShopCartServiceImpl implements ShopCartService {
 
 
-  private final String CART_KEY = "cart:";
+  private final String PRODUCT_KEY = "product_number_";
 
   @Autowired
   private RedisHashOperations redisHashOperations;
 
   @Override
-  public ApiResp<Boolean> addCart(OperateVo vo) {
-    String key = CART_KEY + vo.getUserId();
-    String hashKey = vo.getSkuId();
-    // Check if the item is already in the cart
-    Object existingItemResponse = redisHashOperations.get(key, hashKey);
-    if (existingItemResponse != null) {
-      // Item exists, update quantity
-      int currentQuantity = (int) existingItemResponse;
-      redisHashOperations.put(key, hashKey, currentQuantity + vo.getNum());
-    } else {
-      // Item doesn't exist, add to cart
-      redisHashOperations.put(key, hashKey, vo.getNum());
-    }
-    return ApiResp.<Boolean>builder().ok().build();
+  public Optional<List<CartItemData>> findAllByUserUid(Long uid) {
+    List<CartItemData> cartItems =
+        redisHashOperations.getAll(String.valueOf(uid));
+    return Optional.ofNullable(cartItems);
   }
 
   @Override
-  public ApiResp<Map<Object, Object>> showCart(OperateVo vo) {
-    String key = CART_KEY + vo.getUserId();
-    Map<Object, Object> cartResponse = redisHashOperations.entries(key);
-    if (cartResponse.get(key) != null) {
-      // Process and return the cart data as needed
-      return ApiResp.<Map<Object, Object>>builder().ok().data(cartResponse)
-          .build();
-    } else {
-      return ApiResp.<Map<Object, Object>>builder()
-          .error(Code.REDIS_GET_ITEM_FROM_CART_FAIL).build();
-    }
+  public Optional<List<CartItemData>> getUserCartItemsByProductId(Long pid) {
+    List<CartItemData> cartItems =
+        redisHashOperations.getAll(formatProductKey(pid));
+    return Optional.ofNullable(cartItems);
   }
 
   @Override
-  public ApiResp<Boolean> updateCartNum(OperateVo vo) {
-    String key = CART_KEY + vo.getUserId();
-    String hashKey = vo.getSkuId();
-    // Check if the item is in the cart
-    boolean itemExistsResponse = redisHashOperations.hasKey(key, hashKey);
-    if (itemExistsResponse) {
-      // Update the quantity
-      redisHashOperations.put(key, hashKey, vo.getNum());
-      return ApiResp.<Boolean>builder().ok().build();
-    } else {
-      return ApiResp.<Boolean>builder().error(Code.PRODUCT_NOT_EXIST).build();
-    }
+  public List<CartItemData> getAll(String key) {
+    return redisHashOperations.getAll(key);
   }
 
   @Override
-  public ApiResp<Boolean> delCart(OperateVo vo) {
-    String key = CART_KEY + vo.getUserId();
-    String hashKey = vo.getSkuId();
-    // Remove the item from the cart
-    redisHashOperations.delete(key, hashKey);
-    return ApiResp.<Boolean>builder().ok().build();
+  public boolean addCartItem(long userId, long pid, Integer quantity)
+      throws UserNotExistException, ProductNotExistException {
+    return redisHashOperations.put(String.valueOf(userId),
+        formatProductKey(pid), quantity);
   }
 
   @Override
-  public ApiResp<Boolean> checkNumCart(OperateVo vo) {
-    String key = CART_KEY + vo.getUserId();
-    Map<Object, Object> cartResponse = redisHashOperations.entries(key);
-    if (cartResponse != null && !cartResponse.isEmpty()) {
-      // Process and return the cart data as needed
-      return ApiResp.<Boolean>builder().ok().data(processCartData(cartResponse))
-          .build();
-    } else {
-      return ApiResp.<Boolean>builder()
-          .error(Code.REDIS_GET_ITEM_FROM_CART_FAIL).build();
+  public boolean updateCartQuantity(long userId, long pid, int quantity)
+      throws ProductNotExistException, UserNotExistException {
+    // Assuming pid is used as the hashKey
+    if (redisHashOperations.hasKey(String.valueOf(userId),
+        formatProductKey(pid))) {
+      redisHashOperations.put(String.valueOf(userId), formatProductKey(pid),
+          quantity);
+      return true;
     }
+    return false;
   }
 
-  private Boolean processCartData(Map<Object, Object> cartMap) {
-    for (Map.Entry<Object, Object> entry : cartMap.entrySet()) {
-      String skuId = (String) entry.getKey();
-      Integer num = (Integer) entry.getValue();
-      // Check if the item is in the cart
-      boolean itemExistsResponse = redisHashOperations.hasKey(CART_KEY, skuId);
-      if (itemExistsResponse) {
-        // Update the quantity
-        redisHashOperations.put(CART_KEY, skuId, num);
-      } else {
-        return false;
-      }
+  @Override
+  public CartItemData getCartItemDetails(long userId, long productId) {
+    // Assuming productId is used as the hashKey
+    Object cartItem = redisHashOperations.get(String.valueOf(userId),
+        formatProductKey(productId));
+    if (cartItem instanceof CartItemData) {
+      return (CartItemData) cartItem;
     }
-    return true;
+    return null;
   }
+
+  @Override
+  public void deleteCartItemByCartItemId(long userId, long cartItemId)
+      throws UserNotExistException, CartItemNotFoundException {
+    // Assuming cartItemId is used as the hashKey
+    redisHashOperations.delete(String.valueOf(userId),
+        String.valueOf(cartItemId));
+  }
+
+  @Override
+  public void deleteAllCartItem(String userId) {
+    redisHashOperations.deleteAll(userId);
+  }
+
+  @Override
+  public boolean checkStock(Product productEntity, Integer quantity) {
+    return quantity <= productEntity.getUnitStock()
+        && productEntity.getUnitStock() != 0;
+  }
+
+  private String formatProductKey(long productId) {
+    return PRODUCT_KEY + productId;
+  }
+
 }
