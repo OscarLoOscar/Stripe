@@ -1,6 +1,6 @@
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
-import { styled, Box, Container } from '@mui/material';
+import { styled, Box } from '@mui/material';
 import SearchBox from './SearchBox/SearchBox';
 import UserStatus from './UserStatus/UserStatus';
 import ContextMenu from './ItemMenu/ContextMenu';

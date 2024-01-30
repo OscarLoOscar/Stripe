@@ -86,7 +86,7 @@ public class GlobalExceptionHandler {
     }
  
     // ...
-    return null;
-//    return Code.NOT_FOUND;
+    // return null;
+   return Code.NOT_FOUND;
   }
 }

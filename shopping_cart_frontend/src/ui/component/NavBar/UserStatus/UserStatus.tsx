@@ -1,4 +1,6 @@
-import { useState, MouseEvent, useContext, useEffect } from 'react';
+import React, { useState, MouseEvent, useContext, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Badge, Box, Button, Divider, Popover, Skeleton, Typography, styled } from '@mui/material';
 import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
 import FavoriteIcon from '@mui/icons-material/Favorite';
@@ -6,16 +8,14 @@ import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import PersonIcon from '@mui/icons-material/Person';
 import LogoutIcon from '@mui/icons-material/Logout';
-import { useNavigate } from 'react-router-dom';
-import { handleSignOut } from '../../../../authService/FirebaseAuthService';
-import { CartItemListDto } from '../../../../data/CartItem/CartItemListDto';
-import * as CartApi from '../../../../api/CartItemApi';
-import { Badge, BadgeProps, Box, Button, Divider, Popover, Skeleton, Typography, styled } from '@mui/material';
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import { LoginUserContext } from '../../../../App';
-import * as TransApi from "../../../../api/TransactionApi";
+import { handleSignOut } from '../../../../authService/FirebaseAuthService';
+import * as CartApi from '../../../../api/CartItemApi';
+import * as TransApi from '../../../../api/TransactionApi';
+import { CartItemListDto } from '../../../../data/CartItem/CartItemListDto';
 
-const StyledBadge = styled(Badge)<BadgeProps>(({ theme }) => ({
+const StyledBadge = styled(Badge)(({ theme }) => ({
   '& .MuiBadge-badge': {
     right: -3,
     top: 13,
@@ -24,55 +24,25 @@ const StyledBadge = styled(Badge)<BadgeProps>(({ theme }) => ({
   },
 }));
 
-export default function UserStatus() {
-  // const [value, setValue] = useState('Login');
-  // const handleChange = (_event: SyntheticEvent, newValue: string) => {
-  //   setValue(newValue);
-  // };
-
-  //user login
+const UserStatus: React.FC = () => {
   const loginUser = useContext(LoginUserContext);
-  const renderLoginContainer = () => {
-    if (loginUser) {
-      return (
-        <>
-          <div style={{ color: "white" }}>
-            Logout {loginUser.email.substring(0, 7)}
-          </div>
-        </>
-      )
-    } else if (loginUser === null) {
-      return (
-        <>
-          <Skeleton variant="circular" width={40} height={40} >
-            Login
-          </Skeleton>
-        </>
-      )
-    } else {
-      return (
-        <>
-          <Skeleton variant="circular" width={40} height={40} />
-        </>
-      )
-    }
-  }
+  const navigate = useNavigate();
+
   // For Popover
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-
   const handleOpenPopoverClick = (event: MouseEvent<HTMLButtonElement> | null = null) => {
     setAnchorEl(event ? event.currentTarget : null);
   };
-
   const handleClose = () => {
     setAnchorEl(null);
   };
-
   const open = Boolean(anchorEl);
   const id = open ? 'simple-popover' : undefined;
 
-  const navigate = useNavigate();
-
+  const handleUserLogout = async () => {
+    await handleSignOut();
+    navigate('/logout');
+  };
   const navigateLoginPage = () => {
     navigate('/login');
   };
@@ -84,24 +54,21 @@ export default function UserStatus() {
   const navigateErrorPage = () => {
     navigate('/error');
   };
-
-  // const navigateShoppingCartPage = () => {
-  //   navigate('/shoppingcart');
-  // };
-
-  const handleUserLogout = async () => {
-    await handleSignOut();
-    navigate('/logout');
-  }
   const [transId, setTransId] = useState<string | undefined>(undefined);
   const [loadingBackdrop, setLoadingBackdrop] = useState<boolean>(false);
+
   const handleCheckout = async () => {
-    setLoadingBackdrop(true)
-    const result = await TransApi.createTransaction()
-    setTransId(result.tid.toString())
-    setLoadingBackdrop(false)
-    navigate("/checkout/" + transId)
-  }
+    try {
+      setLoadingBackdrop(true);
+      const result = await TransApi.createTransaction();
+      setTransId(result.tid.toString());
+      navigate(`/checkout/${transId}`);
+    } catch (error) {
+      console.error('Error during checkout:', error);
+    } finally {
+      setLoadingBackdrop(false);
+    }
+  };
 
   const [cartItems, setCartItems] = useState<CartItemListDto[]>([]);
   const [cartItemLength, setCartItemLength] = useState<number>(0);
@@ -110,17 +77,40 @@ export default function UserStatus() {
     const result = await CartApi.getCartItemListApi();
     setCartItems(result);
     setCartItemLength(result.length);
-  }
+  };
 
-  // const handleUpdateCartItem = async (pid: string) => {
-  //   const result = await CartApi.updateCartItemApi(pid.toString(), "1")
-  //   console.log(result);
-  // }
+  useEffect(() => {
+    // Update cartItems and cartItemLength
+    if (loginUser) {
+      getCartItemListLength();
+    }
+  }, [loginUser]);
+
+  useEffect(() => {
+    const fetchCartItems = async () => {
+      try {
+        const result = await CartApi.getCartItemListApi();
+        setCartItems(result);
+        setCartItemLength(result.length);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchCartItems(); // Initial fetch
+
+    // Subsequent fetches whenever the length of cart items changes
+    const intervalId = setInterval(fetchCartItems, 5000);
+
+    // Cleanup the interval on component unmount
+    return () => clearInterval(intervalId);
+  }, [] ); // Empty dependency array, runs only once on component mount
+
 
   const handleDeleteCartItem = async (cid: string) => {
-    const result = await CartApi.deleteCartItemApi(cid.toString())
+    const result = await CartApi.deleteCartItemApi(cid.toString());
     console.log(result);
-  }
+  };
 
   const popoverContent = (
     <Box sx={{ width: 'auto', height: 'auto' }}>
@@ -138,31 +128,10 @@ export default function UserStatus() {
       >
         {cartItems.length > 0 ? (
           cartItems.map((item) => (
-            <Box
-              key={item.pid}
-              sx={{
-                display: 'flex',
-                flexDirection: 'row',
-                alignItems: 'center',
-                width: '100%',
-              }}
-            >
-              <Box
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <Typography sx={{ py: 0.5, px: 1, color: '#009688', fontSize: '13px' }}>
-                  {item.name}
-                </Typography>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                  }}
-                >
+            <Box key={item.pid} sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%' }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                <Typography sx={{ py: 0.5, px: 1, color: '#009688', fontSize: '13px' }}>{item.name}</Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
                   <Typography sx={{ py: 0.5, px: 1, color: '#1a237e', fontSize: '13px' }}>
                     ${item.price}.00 x {item.cart_quantity}
                   </Typography>
@@ -188,35 +157,22 @@ export default function UserStatus() {
         ) : (
           <Typography sx={{ p: 2, fontWeight: '700', color: '#4caf50' }}>Your cart is empty.</Typography>
         )}
-        <Box width="25%" sx={{
-          display: "flex",
-          alignItems: "center"
-        }}>
-          <Button variant="contained" fullWidth
-            onClick={handleCheckout}
-          >Checkout</Button>
+        <Box width="45%" sx={{ display: 'flex', alignItems: 'center' }}>
+          <Button variant="contained" fullWidth onClick={handleCheckout}>
+            Checkout
+          </Button>
         </Box>
       </Box>
     </Box>
   );
-  useEffect(() => {
-    // Update cartItems and cartItemLength
-    if (loginUser) {
-      getCartItemListLength();
-    }
-  }, [loginUser]);
 
-  // useEffect(() => {
-  //   setCartItemLength(cartItems.length);
-  // }, [cartItems])
   return (
     <>
-      {/** handleChange之後keep白色 */}
       <BottomNavigation
         sx={{
-          width: "auto",
+          width: 'auto',
           display: 'block',
-          margin: "auto",
+          margin: 'auto',
           backgroundColor: 'transparent',
           cursor: 'pointer',
           '& .Mui-selected': {
@@ -228,80 +184,48 @@ export default function UserStatus() {
           },
         }}
         showLabels
-      //  onChange={handleChange}
       >
         <BottomNavigationAction
-          label={renderLoginContainer()}
+          label={loginUser ? `Logout ${loginUser.email.substring(0, 7)}` : <Skeleton variant="circular" width={40} height={40} />}
           value={loginUser ? 'Welcome' : 'Login'}
           icon={loginUser ? <LogoutIcon sx={{ color: 'white' }} /> : <PersonIcon sx={{ color: 'white' }} />}
           onClick={loginUser ? handleUserLogout : navigateLoginPage}
-          sx={{
-            width: 100,
-            '&:hover': {
-              backgroundColor: '#90caf9',
-            },
-          }}
+          sx={{ width: 100, '&:hover': { backgroundColor: '#90caf9' } }}
         />
-        {/**handleChange 之前icon白色 */}
         <BottomNavigationAction
           label="Notifications"
           icon={<NotificationsIcon sx={{ color: 'white' }} />}
           onClick={navigateThankyouPage}
-          sx={{
-            width: 100,
-            '&:hover': {
-              backgroundColor: '#90caf9',
-            },
-          }}
+          sx={{ width: 100, '&:hover': { backgroundColor: '#90caf9' } }}
         />
         <BottomNavigationAction
           label="Favorites"
           icon={<FavoriteIcon sx={{ color: 'white' }} />}
           onClick={navigateErrorPage}
-          sx={{
-            width: 100,
-            '&:hover': {
-              backgroundColor: '#90caf9',
-            },
-          }}
+          sx={{ width: 100, '&:hover': { backgroundColor: '#90caf9' } }}
         />
-        {/* Drawer -> 黑屏選項 效果 */}
-        {/* Popover -> 彈出shopping cart 效果 */}
         <BottomNavigationAction
           aria-describedby={id}
           label="Shopping Cart"
           icon={
-            <StyledBadge badgeContent={cartItemLength}
-              color="secondary">
+            <StyledBadge badgeContent={cartItemLength} color="secondary">
               <ShoppingCartIcon sx={{ color: 'white' }} />
-            </StyledBadge>}
+            </StyledBadge>
+          }
           onClick={(event) => {
             handleOpenPopoverClick(event);
           }}
-          sx={{
-            width: 100,
-            '&:hover': {
-              backgroundColor: '#90caf9',
-            },
-          }}
+          sx={{ width: 100, '&:hover': { backgroundColor: '#90caf9' } }}
         />
-        {/* </IconButton> */}
-      </BottomNavigation >
-
+      </BottomNavigation>
 
       {/* CART */}
       {/* Popover */}
       <Popover
         id={id}
         open={open}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'center',
-        }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'center' }}
         anchorEl={anchorEl}
         onClose={handleClose}
       >
@@ -309,5 +233,6 @@ export default function UserStatus() {
       </Popover>
     </>
   );
-}
+};
 
+export default UserStatus;

@@ -7,3 +7,7 @@ export interface CartItemListDto {
   cart_quantity: number;
   stock: number;
 }
+
+export interface ExtendedCartItemListDto extends CartItemListDto {
+  total_quantity: number;
+}
