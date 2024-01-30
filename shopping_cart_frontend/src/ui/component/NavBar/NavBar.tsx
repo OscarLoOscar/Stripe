@@ -50,6 +50,7 @@ export default function NavBar() {
             top: 0,
             display: 'block',
             margin: "auto",
+            position: "sticky"
           }}>
           <Toolbar>
             <ContextMenu />

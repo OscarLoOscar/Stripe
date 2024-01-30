@@ -1,4 +1,4 @@
-package com.example.shoppingcart.controller;
+package com.example.shoppingcart.controller.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -12,7 +12,7 @@ import com.example.shoppingcart.services.UserService;
 
 @RestController
 @RequestMapping("/user")
-public class UserController {
+public class UserOperation {
   @Autowired
   UserService userService;
 

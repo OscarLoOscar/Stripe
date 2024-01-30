@@ -25,7 +25,7 @@ export default function ProductDetails() {
 
     const renderProductDetail = () => {
         if (productDetails) {
-            return <ProductDetailsCard key={productId} data={productDetails} />
+            return <ProductDetailsCard key={productId} productData={productDetails} />
         } else {
             return <Loading />
         }

@@ -1,62 +1,135 @@
 package com.example.shoppingcart.controller;
 
+import java.util.Collections;
 import java.util.List;
-import org.springframework.http.HttpStatus;
+import java.util.Optional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import com.example.shoppingcart.controller.impl.CartItemOperation;
+import com.example.shoppingcart.entity.UserEntity;
 import com.example.shoppingcart.exception.CartItemNotFoundException;
 import com.example.shoppingcart.exception.ProductNotExistException;
 import com.example.shoppingcart.exception.UserNotExistException;
+import com.example.shoppingcart.infra.JwtUntil;
+import com.example.shoppingcart.infra.enums.TranStatus;
 import com.example.shoppingcart.model.CartItemData;
+import com.example.shoppingcart.model.FireBaseUserData;
 import com.example.shoppingcart.model.TransactionUpdateResponse;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import com.example.shoppingcart.services.UserService;
+import com.example.shoppingcart.services.impl.CartItemServiceImpl;
+import lombok.extern.slf4j.Slf4j;
 
-public interface CartItemController {
-        // 3.Add New Item To Cart. If Cart Item existed, add quantity.
-        // Add quantity only, do not reduce stock
-        @PutMapping("/{pid}/{quantity}")
-        @ResponseStatus(HttpStatus.CREATED)
-        public TransactionUpdateResponse addCartItem(JwtAuthenticationToken jwt, //
-                        @PathVariable(name = "pid") String inputPid, //
-                        @PathVariable(name = "quantity") String inputQuantity)
-                        throws ProductNotExistException, UserNotExistException;
+@Slf4j
+@RestController
+@RequestMapping("/cart")
+@CrossOrigin(origins = "http://localhost:5173", maxAge = 3600)
+public class CartItemController implements CartItemOperation {
 
-        // 4.Get User Cart Items
-        @Operation(summary = "Get all the Cart Item by user JWT")
-        @ApiResponses({//
-                        @ApiResponse(responseCode = "200", //
-                                        content = {@Content(schema = @Schema(
-                                                        implementation = CartItemData.class))})})
-        @GetMapping
-        @ResponseStatus(HttpStatus.ACCEPTED)
-        public List<CartItemData> getUserCartItems(JwtAuthenticationToken jwt);
+  private final CartItemServiceImpl cartItemService;
 
-        // 5. PATCH  /cart/{pid}/{quantity}: Update cart quantity
-        @Operation(summary = "Update cart quantity")
-        @PatchMapping("/{pid}/{quantity}")
-        public CartItemData updateCartQuantity(
-                        @PathVariable(name = "pid") String inputPid, //
-                        @PathVariable(name = "quantity") String inputQuantity, //
-                        JwtAuthenticationToken jwt)
-                        throws ProductNotExistException, UserNotExistException;
+  private final UserService userService;
 
-        // 6.DELETE /cart/{cid}: Remove cart item
-        @DeleteMapping("/{cid}")
-        @ResponseStatus(HttpStatus.ACCEPTED)
-        TransactionUpdateResponse removeCartItem(
-                        @PathVariable(name = "cid") String inputPid, //
-                        JwtAuthenticationToken jwt)
-                        throws NumberFormatException, UserNotExistException,
-                        CartItemNotFoundException;
+  @Autowired
+  public CartItemController(CartItemServiceImpl cartItemService, //
+      UserService userService) {
+    this.cartItemService = cartItemService;
+    this.userService = userService;
+  }
 
+  // @Autowired
+  // CartItemStorage cartItemStorage;
+
+
+  @Override
+  public List<CartItemData> getUserCartItems(JwtAuthenticationToken jwt) {
+    FireBaseUserData user = JwtUntil.getFireBaseUser(jwt);
+    UserEntity userEntity = userService.getEntityByFireBaseUserData(user);
+    Long userId = userEntity.getUserId();
+
+    if (Optional.of(userEntity).isEmpty()) {
+      // Handle the case where userEntity is null, perhaps by returning an empty list or throwing an exception
+      return Collections.emptyList();
+    }
+    Optional<List<CartItemData>> userCartItemsOptional =
+        cartItemService.findAllByUserUid(userId);
+    return userCartItemsOptional.orElse(Collections.emptyList());
+  }
+
+  // postman : development environment
+  @Override
+  public TransactionUpdateResponse addCartItem(JwtAuthenticationToken jwt, //
+      String inputPid, //
+      String inputQuantity)
+      throws ProductNotExistException, UserNotExistException {
+    // check user
+    FireBaseUserData user = JwtUntil.getFireBaseUser(jwt);
+    UserEntity userEntity = userService.getEntityByFireBaseUserData(user);
+    Long userId = userEntity.getUserId();
+    log.info("userId : " + userId);
+    // convent pid and quantoty
+    Integer pid = Integer.parseInt(inputPid);
+    log.info("pid : " + pid);
+    log.info("inputQuantity : " + inputQuantity);
+
+    Integer quantity = Integer.parseInt(inputQuantity);
+
+    // save
+    // cartItemService.updateCartQuantity(userId, pid, quantity);
+    cartItemService.addCartItem(userId, pid, quantity);
+    return new TransactionUpdateResponse(TranStatus.PREPARE.name());
+  }
+
+
+  public boolean checkValidNumber(String str) {
+    if (str == null) {
+      return false;
+    }
+    try {
+      double d = Double.parseDouble(str);
+    } catch (NumberFormatException nfe) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public CartItemData updateCartQuantity(String inputPid, String inputQuantity,
+      JwtAuthenticationToken jwt)
+      throws ProductNotExistException, UserNotExistException {
+    // check user
+    FireBaseUserData user = JwtUntil.getFireBaseUser(jwt);
+    UserEntity userEntity = userService.getEntityByFireBaseUserData(user);
+    Long uid = userEntity.getUserId();
+    // convent pid and quantoty
+    Long pid = Long.valueOf(inputPid);
+    Integer quantity = Integer.valueOf(inputQuantity);
+    log.info("CHECK input Quantity : " + quantity);
+    // Update cart quantity
+    boolean success = cartItemService.updateCartQuantity(uid, pid, quantity);
+
+    if (success) {
+      // Return the updated cart item details
+      return cartItemService.getCartItemDetails(uid, pid);
+    } else {
+      // Handle the case where the update was not successful (e.g., item not found)
+      // You can customize this part based on your business logic
+      return new CartItemData(); // Return an empty object or handle accordingly
+    }
+  }
+
+  @Override
+  public TransactionUpdateResponse removeCartItem(String inputCid,
+      JwtAuthenticationToken jwt) throws NumberFormatException,
+      UserNotExistException, CartItemNotFoundException {
+    FireBaseUserData user = JwtUntil.getFireBaseUser(jwt);
+    UserEntity userEntity = userService.getEntityByFireBaseUserData(user);
+
+    cartItemService.deleteCartItemByCartItemId(userEntity.getUserId(),
+        Long.valueOf(inputCid));
+    return new TransactionUpdateResponse(TranStatus.SUCCESS.name());
+  }
 
 }
